@@ -1,5 +1,8 @@
 package com.example.memopad;
 
+import java.text.DateFormat;
+import java.util.Date;
+
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -51,5 +54,21 @@ public class MemopadActivity extends Activity {
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
+	}
+	
+	void saveMemo(){
+		EditText et = (EditText)this.findViewById(R.id.editText1);
+		String title;
+		String memo = et.getText().toString();
+		
+		if(memo.trim().length()>0){
+			if(memo.indexOf("\n") == -1){
+				title = memo.substring(0, Math.min(memo.length(), 20));
+			}else{
+				title = memo.substring(0, Math.min(memo.length(), 20));
+			}
+			String ts =DateFormat.getDateTimeInstance().format(new Date());
+			MemoDBHelper memos = new MemoDBHelper(this);
+		}
 	}
 }
