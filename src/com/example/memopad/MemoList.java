@@ -1,11 +1,19 @@
 package com.example.memopad;
 
+import android.app.AlertDialog;
 import android.app.ListActivity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.EditText;
 import android.widget.SimpleCursorAdapter;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 
@@ -37,6 +45,8 @@ public class MemoList extends ListActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.memolist);
 		showMemos(getMemos());
+		ListView lv = (ListView)this.findViewById(android.R.id.list);
+		registerForContextMenu(lv);
 	}
 	
 	private Cursor getMemos(){
@@ -60,7 +70,57 @@ public class MemoList extends ListActivity {
 		}
 		memos.close();
 	}
+
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);
+		
+		MenuInflater mi = getMenuInflater();
+		mi.inflate(R.menu.contextmenu, menu);
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info =
+				(AdapterContextMenuInfo)item.getMenuInfo();
+		Cursor cursor = getMemos();
+		cursor.moveToPosition(info.position);
+		final int columnid = cursor.getInt(2);
+		
+		AlertDialog.Builder ab = new AlertDialog.Builder(this);
+		ab.setTitle(R.string.memodb_delete);
+		ab.setMessage(R.string.memodb_confirm_delete);
+		ab.setPositiveButton(R.string.button_ok, 
+				new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						SQLiteDatabase db = memos.getWritableDatabase();
+						db.delete("memoDB", "_id=" + columnid, null);
+						db.close();
+						showMemos(getMemos());
+					}
+				});
+		ab.setNegativeButton(R.string.button_cancel, 
+				new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+					}
+				});
+		ab.show();
+		
+		return super.onContextItemSelected(item);
+	}
 	
-	
+	public void searchMemo(View v){
+		EditText et = (EditText)findViewById(R.id.editText1);
+		String q = et.getText().toString();
+		SQLiteDatabase db = memos.getReadableDatabase();
+		Cursor cursor = db.query(
+				"memoDB", cols, "memo like '%" + q + "%'",
+				null, null, null, null);
+		showMemos(cursor);
+	}
 
 }

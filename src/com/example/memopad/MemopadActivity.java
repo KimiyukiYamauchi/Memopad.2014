@@ -9,12 +9,16 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.Selection;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 
 public class MemopadActivity extends Activity {
+	
+	boolean memoChanged = false;
 
 	@Override
 	protected void onStop() {
@@ -25,6 +29,7 @@ public class MemopadActivity extends Activity {
 		SharedPreferences.Editor editor = pref.edit();
 		editor.putString("memo", et.getText().toString());
 		editor.putInt("cursor", Selection.getSelectionStart(et.getText()));
+		editor.putBoolean("memoChanged", memoChanged);
 		editor.commit();
 	}
 
@@ -38,6 +43,25 @@ public class MemopadActivity extends Activity {
 			= this.getSharedPreferences("MemoPrefs", MODE_PRIVATE);
 		et.setText(pref.getString("memo", "no text"));
 		et.setSelection(pref.getInt("cursor", 0));
+		memoChanged = pref.getBoolean("memoChanaged", false);
+		
+		TextWatcher tw =new TextWatcher() {
+			
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				memoChanged = true;
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
+			}
+			
+			@Override
+			public void afterTextChanged(Editable s) {
+			}
+		};
+		et.addTextChangedListener(tw);
 	}
 
 	@Override
@@ -54,10 +78,16 @@ public class MemopadActivity extends Activity {
 			saveMemo();
 			return true;
 		}else if(id == R.id.menu_open){
+			if(memoChanged){
+				saveMemo();
+			}
 			Intent i = new Intent(this, MemoList.class);
 			startActivityForResult(i, 0);
 			return true;
 		}else if(id == R.id.menu_new){
+			if(memoChanged){
+				saveMemo();
+			}
 			et.setText("");
 			return true;
 		}
@@ -70,6 +100,7 @@ public class MemopadActivity extends Activity {
 		if(resultCode == RESULT_OK && requestCode == 0){
 			EditText et = (EditText)findViewById(R.id.editText1);
 			et.setText(data.getStringExtra("text"));
+			memoChanged = false;
 			return;
 		}
 	}
@@ -94,5 +125,6 @@ public class MemopadActivity extends Activity {
 			db.insertOrThrow("memoDB", null, values);
 			memos.close();
 		}
+		memoChanged = false;
 	}
 }
